@@ -1,15 +1,12 @@
 package delveServer
 
 import (
+	"git.garena.com/shopee/loan-service/airpay_backend/public/common/log"
 	"github.com/go-delve/delve/service"
 	"github.com/go-delve/delve/service/debugger"
 	"github.com/go-delve/delve/service/rpccommon"
 	"net"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
-	"git.garena.com/shopee/loan-service/airpay_backend/public/common/log"
 )
 
 type DelveServer struct{
@@ -100,15 +97,10 @@ func (ds *DelveServer) StartServer() error {
 //监听停止信号
 func (ds *DelveServer) WaitForStopServer() error{
 	log.Infof("Waiting for Server stop.")
-	//接受系统信号的channel，可以向此进程发送SIGINT或SIGTERM或来终止此进程，防止一直attach
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch , syscall.SIGINT, syscall.SIGTERM, syscall.SIGCHLD)
 	ticker := time.NewTicker(ds.duration)
 	select {
 	case <- ticker.C:
 		log.Infof("[DelveServer.WaitForStopServer]stoped by time ticker .")
-	case <- ch :
-		log.Infof("[DelveServer.WaitForStopServer]server stoped by system signal : SIGINT.")
 	case <- ds.disconnectCH:
 		log.Infof("[DelveServer.WaitForStopServer]server stoped by client.")
 	}

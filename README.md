@@ -4,6 +4,12 @@
 
 将该工具编译成二进制文件，在k8s的特权pod中运行，需要sys_ptrace和sys_admin的权限，同时需要指明hostPID来获取node的进程。（可以在pod部署时的yaml文件声明）
 
+使用如下命令编译成二进制文件
+
+```go
+CGO_ENABLED=0 GOOS=linux go build -mod=vendor -o delve_tool
+```
+
 使用时，使用如下命令运行二进制文件
 
 ```go
