@@ -83,7 +83,8 @@ func getErrorTypeString(errorType int)string{
 }
 func main(){
 	flag.Parse()
-	log.InitLog(log.InfoLvl)
+	log.InitLog(log.DebugLvl)
+	log.InitFlowLog(".")
 	if podName == "" || containerName == "" {
 		flag.Usage()
 		return
@@ -95,7 +96,8 @@ func main(){
 
 	pid , err := GetTargetPid(podName , namespace , containerName , containerRuntime)
 	if err != nil{
-		panic(err)
+		fmt.Printf("error : %s", err.Error())
+		return
 	}
 
 	g.Go( func () error{
@@ -107,6 +109,7 @@ func main(){
 	})
 
 	if err = g.Wait(); err != nil{
-		panic(err)
+		fmt.Printf("error : %s\n", err.Error())
+		return
 	}
 }

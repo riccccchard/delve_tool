@@ -58,10 +58,10 @@ func (dc *DelveClient) initClient (address string) error {
 	dc.client = rpc2.NewClientFromConn(*conn)
 	dc.client.SetReturnValuesLoadConfig(&api.LoadConfig{
 	})
-	if dc.client.AttachedToExistingProcess(){
-		log.Errorf("[DelveClient.InitClient]can't connect to server : the server had attached other process!")
-		return errors.New("[DelveClient.InitClient]can't connect to server : the server had attached other process")
-	}
+	//if dc.client.AttachedToExistingProcess(){
+	//	log.Errorf("[DelveClient.InitClient]can't connect to server : the server had attached other process!")
+	//	return errors.New("[DelveClient.InitClient]can't connect to server : the server had attached other process")
+	//}
 	return nil
 }
 
