@@ -7,7 +7,7 @@
 使用时，使用如下命令运行二进制文件
 
 ```go
-./delve_tool --pod="your pod name" --container="your container name" --namespace="your namespace" --address="127.0.0.1:30303" --duration=30s --containerRuntime="docker" --errorType=0
+./delve_tool --pod="your pod name" --container="your container name" --namespace="your namespace" --address="127.0.0.1:30303" --duration=30s --containerRuntime="docker" --type=0
 ```
 
 参数意义如下
@@ -24,7 +24,7 @@ duration：整个attach需要持续的时间，默认为30s
 
 containerRuntime：k8s底层的container runtime interface的实现方法，目前支持"docker"和"containerd"两种，默认为docker
 
-errorType：你想要注入的故障类型，0表示数据库查询异常
+type：你想要注入的故障类型，0表示数据库查询异常
 
 ##  使用建议
 
