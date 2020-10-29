@@ -11,11 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bpm
+package backgroundManager_test
 
 import (
 	"context"
-	"delve_tool/pkg/bpm"
+	"delve_tool/pkg/backgroundManager"
 	"math/rand"
 	"testing"
 	"time"
@@ -44,12 +44,12 @@ func RandomeIdentifier() string {
 	return string(s)
 }
 
-func WaitProcess(m *bpm.BackgroundProcessManager, cmd *bpm.ManagedProcess, exceedTime time.Duration) {
+func WaitProcess(m *backgroundManager.BackgroundProcessManager, cmd *backgroundManager.ManagedProcess, exceedTime time.Duration) {
 	pid := cmd.Process.Pid
 	procState, err := process.NewProcess(int32(pid))
 	Expect(err).To(BeNil())
 	ct, err := procState.CreateTime()
-	pair := bpm.ProcessPair{
+	pair := backgroundManager.ProcessPair{
 		Pid:        pid,
 		CreateTime: ct,
 	}
@@ -67,11 +67,11 @@ func WaitProcess(m *bpm.BackgroundProcessManager, cmd *bpm.ManagedProcess, excee
 }
 
 var _ = Describe("background process manager", func() {
-	m := bpm.NewBackgroundProcessManager()
+	m := backgroundManager.NewBackgroundProcessManager()
 
 	Context("normally exited process", func() {
 		It("should work", func() {
-			cmd := bpm.DefaultProcessBuilder("sleep", "2").Build()
+			cmd := backgroundManager.DefaultProcessBuilder("sleep", "2").Build()
 			err := m.StartProcess(cmd)
 			Expect(err).To(BeNil())
 
@@ -81,14 +81,14 @@ var _ = Describe("background process manager", func() {
 		It("processes with the same identifier", func() {
 			identifier := RandomeIdentifier()
 
-			cmd := bpm.DefaultProcessBuilder("sleep", "2").
+			cmd := backgroundManager.DefaultProcessBuilder("sleep", "2").
 				SetIdentifier(identifier).
 				Build()
 			err := m.StartProcess(cmd)
 			Expect(err).To(BeNil())
 
 			startTime := time.Now()
-			cmd2 := bpm.DefaultProcessBuilder("sleep", "2").
+			cmd2 := backgroundManager.DefaultProcessBuilder("sleep", "2").
 				SetIdentifier(identifier).
 				Build()
 			err = m.StartProcess(cmd2)
@@ -105,7 +105,7 @@ var _ = Describe("background process manager", func() {
 
 	Context("kill process", func() {
 		It("should work", func() {
-			cmd := bpm.DefaultProcessBuilder("sleep", "2").Build()
+			cmd := backgroundManager.DefaultProcessBuilder("sleep", "2").Build()
 			err := m.StartProcess(cmd)
 			Expect(err).To(BeNil())
 
@@ -125,7 +125,7 @@ var _ = Describe("background process manager", func() {
 		It("process with the same identifier", func() {
 			identifier := RandomeIdentifier()
 
-			cmd := bpm.DefaultProcessBuilder("sleep", "2").
+			cmd := backgroundManager.DefaultProcessBuilder("sleep", "2").
 				SetIdentifier(identifier).
 				Build()
 			err := m.StartProcess(cmd)
@@ -137,7 +137,7 @@ var _ = Describe("background process manager", func() {
 			ct, err := procState.CreateTime()
 			Expect(err).To(BeNil())
 
-			cmd2 := bpm.DefaultProcessBuilder("sleep", "2").
+			cmd2 := backgroundManager.DefaultProcessBuilder("sleep", "2").
 				SetIdentifier(identifier).
 				Build()
 
