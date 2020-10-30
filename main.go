@@ -6,10 +6,11 @@ import (
 	"delve_tool/delveClient"
 	"delve_tool/delveServer"
 	"flag"
+	"fmt"
 	"git.garena.com/shopee/loan-service/airpay_backend/public/common/log"
 	"golang.org/x/sync/errgroup"
+	"os"
 	"time"
-	"fmt"
 )
 var(
 	podName             string
@@ -55,7 +56,7 @@ func GetTargetPid(podName string , namespace string , containerName string, cont
 func AttachTargetProcess(pid uint32, address string)error{
 	myDelveServer = &delveServer.DelveServer{}
 
-	err := myDelveServer.InitServer(int(pid), address , duration + 3*time.Second)//比客户端多等3秒
+	err := myDelveServer.InitServer(int(pid), address , duration + 500 * time.Millisecond)//比客户端多等0.5秒
 	if err != nil{
 		return err
 	}
@@ -84,7 +85,6 @@ func getErrorTypeString(errorType int)string{
 func main(){
 	flag.Parse()
 	log.InitLog(log.DebugLvl)
-	log.InitFlowLog(".")
 	if podName == "" || containerName == "" {
 		flag.Usage()
 		return
@@ -107,7 +107,16 @@ func main(){
 	g.Go( func() error{
 		return  SetErrorToTargetProcess(errorType , duration , address)
 	})
-
+	//起一个协程计时，如果超过duration三秒直接停掉进程，防止因为其他原因阻塞在server.stop
+	go func(){
+		ticker := time.NewTicker(duration + 3 * time.Second)
+		select{
+		case <- ticker.C:
+			fmt.Printf("[Main]Process stoped by ticker , quiting...")
+			log.Infof("[Main]Process stoped by ticker , quiting...")
+			os.Exit(0)
+		}
+	}()
 	if err = g.Wait(); err != nil{
 		fmt.Printf("error : %s\n", err.Error())
 		return

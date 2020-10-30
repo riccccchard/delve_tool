@@ -60,7 +60,7 @@ func (ds *DelveServer) InitServer(attachPid int , address string, duration time.
 	config :=  &service.Config{
 		Listener:               listener,
 		ProcessArgs:            []string{},
-		AcceptMulti:            true,
+		AcceptMulti:            false,
 		APIVersion:             2,
 		CheckLocalConnUser:     false,
 		DisconnectChan:         ds.disconnectCH,
