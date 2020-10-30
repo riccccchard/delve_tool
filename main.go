@@ -85,7 +85,7 @@ func getErrorTypeString(errorType int)string{
 func main(){
 	flag.Parse()
 	log.InitLog(log.DebugLvl)
-	if podName == "" || containerName == "" {
+	if podName == ""{
 		flag.Usage()
 		return
 	}

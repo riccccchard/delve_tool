@@ -34,6 +34,10 @@ func (cc *ContainerClient) GetContainerID (ctx context.Context , namespace strin
 	for _ , pod := range list.Items{
 		if pod.Name == podName{
 			for _ , container := range pod.Status.ContainerStatuses{
+				if containerName == "" && container.Name != "pause" {
+					//如果没指明containerName，就返回第一个不是pause容器的containerID
+					return container.ContainerID, nil
+				}
 				if containerName == container.Name{
 					return container.ContainerID , nil
 				}
