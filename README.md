@@ -220,7 +220,7 @@ func getMysqlService2() string {
 
 4. 在之后的10s中的时间内，采用curl就会返回我们想要的结果：
 
-   ![image-20201030153254145](/Users/xiaoshupeng/delve_tool/image/demo.png)
+   ![image](/image/demo.png)
 
 
 
