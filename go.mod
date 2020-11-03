@@ -20,6 +20,7 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-delve/delve v1.5.1-0.20200915214930-85952c08267b
 	github.com/go-ole/go-ole v1.2.4 // indirect
+	github.com/go-sql-driver/mysql v1.4.1
 	github.com/gogo/googleapis v1.4.0 // indirect
 	github.com/imdario/mergo v0.3.9 // indirect
 	github.com/json-iterator/go v1.1.10 // indirect
@@ -30,12 +31,15 @@ require (
 	github.com/opencontainers/selinux v1.6.0 // indirect
 	github.com/prometheus/procfs v0.0.11 // indirect
 	github.com/shirou/gopsutil v2.20.9+incompatible
+	github.com/sirupsen/logrus v1.6.0
+	github.com/stretchr/testify v1.4.0
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	golang.org/x/text v0.3.3 // indirect
 	gonum.org/v1/netlib v0.0.0-20190331212654-76723241ea4e // indirect
 	k8s.io/api v0.18.6
 	k8s.io/apiextensions-apiserver v0.18.6 // indirect
+	k8s.io/apimachinery v0.18.6
 	k8s.io/client-go v0.18.6
 	k8s.io/utils v0.0.0-20200603063816-c1c6865ac451 // indirect
 	sigs.k8s.io/controller-runtime v0.6.3
