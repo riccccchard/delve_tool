@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"git.garena.com/shopee/loan-service/airpay_backend/public/common/log"
+	"github.com/go-delve/delve/pkg/logflags"
 )
 
 var (
@@ -83,10 +84,18 @@ func getErrorTypeString(errorType delveClient.ErrorType) string {
 	return "unknow error type"
 }
 
+//打开delve server调试信息
+func setupSelveServerDebugLog(){
+	logflags.Setup(true , "debugger", "")
+	logflags.Setup(true , "rpc", "")
+}
+
 func main() {
 	flag.Parse()
 	log.InitLog(log.DebugLvl)
 	log.Infof("[Main]Get args from command , pid : %d , address : %s , duration , %s , error type : %s", pid, address, duration, getErrorTypeString(delveClient.ErrorType(errorType)))
+
+	setupSelveServerDebugLog()
 
 	if pid <= 0{
 		fmt.Printf("pid must be Positive number!")
