@@ -16,12 +16,6 @@ type DelveClient struct{
 	address     string
 }
 
-type ErrorType  int
-
-const(
-	SqlQueryType ErrorType = 0
-)
-
 //等待服务起来，获取连接
 func waitServerToUp(address string)(*net.Conn , error){
 	//等待三秒
@@ -58,14 +52,11 @@ func (dc *DelveClient) initClient (address string) error {
 	dc.client = rpc2.NewClientFromConn(*conn)
 	dc.client.SetReturnValuesLoadConfig(&api.LoadConfig{
 	})
-	//if dc.client.AttachedToExistingProcess(){
-	//	log.Errorf("[DelveClient.InitClient]can't connect to server : the server had attached other process!")
-	//	return errors.New("[DelveClient.InitClient]can't connect to server : the server had attached other process")
-	//}
 	return nil
 }
 
-func (dc *DelveClient) clealAllBreakPoints() error{
+//清理所有的断点
+func (dc *DelveClient) clearAllBreakPoints() error{
 	log.Infof("[DelveClient.ClearAllBreakPoints] clearing all break points....")
 	breakpoints , err := dc.client.ListBreakpoints()
 	if err != nil{
@@ -88,18 +79,15 @@ func (dc *DelveClient) InitAndWork(errorType ErrorType , workTime time.Duration 
 	if err != nil{
 		return err
 	}
-	err = dc.clealAllBreakPoints()
-	if err != nil{
-		return err
-	}
 	switch errorType{
-	case SqlQueryType:{
-		return dc.setSqlQueryError(workTime)
-	}
+	case SqlError:
+		//为go-sql-driver注入异常
+		return dc.setGolangSqlError(workTime)
 	default:
 		log.Errorf("[DelveClient.Work]Unknow errorType!")
 		return errors.New("[DelveClient.Work]Unknow errorType")
 	}
+
 }
 
 

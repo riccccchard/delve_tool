@@ -13,12 +13,8 @@ import (
 )
 
 var(
-	ContainerRuntimeClient *ContainerClient
-)
-
-func init(){
 	ContainerRuntimeClient = &ContainerClient{}
-}
+)
 
 const(
 	containerRuntimeDocker     = "docker"
