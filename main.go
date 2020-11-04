@@ -22,6 +22,8 @@ var (
 	address       string
 	myDelveClient *delveClient.DelveClient
 	pid           int
+	//是否打印delve server 和rpc的调试信息
+	debug         bool
 )
 
 const (
@@ -35,6 +37,7 @@ func init() {
 	flag.DurationVar(&duration, "duration", 30*time.Second, "Duration of the experiment")
 	flag.IntVar(&errorType, "type", 0, errorTypeUsage)
 	flag.IntVar(&pid, "pid", 0, "target process pid")
+	flag.BoolVar(&debug, "debug" , false , "debug is used to pring delve server and rpc-json flags")
 }
 
 //获取目标容器Pid
@@ -95,7 +98,9 @@ func main() {
 	log.InitLog(log.DebugLvl)
 	log.Infof("[Main]Get args from command , pid : %d , address : %s , duration , %s , error type : %s", pid, address, duration, getErrorTypeString(delveClient.ErrorType(errorType)))
 
-	setupSelveServerDebugLog()
+	if debug{
+		setupSelveServerDebugLog()
+	}
 
 	if pid <= 0{
 		fmt.Printf("pid must be Positive number!")
