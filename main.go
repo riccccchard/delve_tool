@@ -90,7 +90,6 @@ func getErrorTypeString(errorType delveClient.ErrorType) string {
 //打开delve server调试信息
 func setupSelveServerDebugLog(){
 	logflags.Setup(true , "debugger", "")
-	logflags.Setup(true , "rpc", "")
 }
 
 func main() {
