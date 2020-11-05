@@ -100,11 +100,13 @@ func (ds *DelveServer) WaitForStopServer() error {
 	ticker := time.NewTicker(ds.duration)
 	select {
 	case <-ticker.C:
-		log.Infof("[DelveServer.WaitForStopServer]stoped by time ticker .")
+		log.Infof("[DelveServer.WaitForStopServer]server stoping by time ticker .")
 	case <-ds.disconnectCH:
-		log.Infof("[DelveServer.WaitForStopServer]server stoped by client.")
+		log.Infof("[DelveServer.WaitForStopServer]server stoping by client.")
 	}
+
 	//停止server
+	//FIXME： 如果没有下一次请求进来，就会一直卡在stop阶段，目前阶段会一直监听直到下一个请求进来
 	err := ds.server.Stop()
 	if err != nil {
 		log.Errorf("[DelveServer.WaitForStopServer]failed to stop server : %s", err.Error())

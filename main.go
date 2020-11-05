@@ -58,15 +58,17 @@ func GetTargetPid(podName string, namespace string, containerName string, contai
 //启动delve server attach目标进程，waitForStopServer是阻塞的，需要起协程
 func AttachTargetProcess(pid uint32, address string) error {
 	myDelveServer = &delveServer.DelveServer{}
-
+	fmt.Printf("[AttachTargetProcess] Initing Server ... \n")
 	err := myDelveServer.InitServer(int(pid), address, duration+500*time.Millisecond) //比客户端多等0.5秒
 	if err != nil {
 		return err
 	}
+	fmt.Printf("[AttachTargetProcess] Staring Server ... \n")
 	err = myDelveServer.StartServer()
 	if err != nil {
 		return err
 	}
+	fmt.Printf("[AttachTargetProcess] Waiting Server to stop... \n")
 	err = myDelveServer.WaitForStopServer()
 	if err != nil {
 		return err
@@ -77,6 +79,7 @@ func AttachTargetProcess(pid uint32, address string) error {
 //注入故障
 func SetErrorToTargetProcess(errorType int, duration time.Duration, address string) error {
 	myDelveClient = &delveClient.DelveClient{}
+	fmt.Printf("[SetErrorToTargetProcess] Client init and working... \n")
 	return myDelveClient.InitAndWork(delveClient.ErrorType(errorType), duration, address)
 }
 
@@ -97,8 +100,8 @@ func main() {
 	flag.Parse()
 	for i := range os.Args {
 		if os.Args[i] == "version" || os.Args[i] == "v" || os.Args[i] == "-v" {
-			fmt.Printf("version : %s", version)
-			break
+			fmt.Printf("version : %s\n", version)
+			return
 		}
 	}
 	log.InitLog(log.DebugLvl)
@@ -109,16 +112,16 @@ func main() {
 	}
 
 	if pid <= 0 {
-		fmt.Printf("pid must be Positive number!")
-		log.Errorf("pid must be Positive number!")
+		fmt.Printf("[Main]pid must be Positive number!\n")
+		log.Errorf("[Main]pid must be Positive number!")
 		flag.Usage()
 		return
 	}
 	if duration <= 0 {
-		log.Infof("duration is a negative integer , force it to 10 seconds.")
+		log.Infof("[Main]duration is a negative integer , force it to 10 seconds.")
 		duration = 10 * time.Second
 	}
-
+	fmt.Printf("[Main]Starting to attach process and set up client...\n")
 	g := &errgroup.Group{}
 	g.Go( func () error {
 		return AttachTargetProcess(uint32(pid), address)
@@ -127,20 +130,10 @@ func main() {
 	g.Go( func () error {
 		return SetErrorToTargetProcess(errorType , duration , address)
 	})
-	//起一个协程计时，如果超过duration三秒直接停掉进程，防止因为其他原因阻塞在server.stop
-	go func() {
-		ticker := time.NewTicker(duration + 3*time.Second)
-		select {
-		case <-ticker.C:
-			fmt.Printf("[Main]Process stoped by ticker , quiting...")
-			log.Infof("[Main]Process stoped by ticker , quiting...")
-			os.Exit(0)
-		}
-	}()
 	if err := g.Wait() ; err != nil{
 		log.Errorf("[Main]Failed to attach or wait server to stop...")
 		return
 	}
 	log.Infof("[Main]Process done successful , quiting...")
-	fmt.Printf("[Main]Process done successful , quiting...")
+	fmt.Printf("[Main]Process done successful , quiting...\n")
 }

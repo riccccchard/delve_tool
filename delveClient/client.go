@@ -82,12 +82,12 @@ func (dc *DelveClient) InitAndWork(errorType ErrorType , workTime time.Duration 
 	switch errorType{
 	case SqlError:
 		//为go-sql-driver注入异常
+		fmt.Printf("[DelveClient.InitAndWork] Ready to set golang sql error....\n")
 		return dc.setGolangSqlError(workTime)
 	default:
 		log.Errorf("[DelveClient.Work]Unknow errorType!")
 		return errors.New("[DelveClient.Work]Unknow errorType")
 	}
-
 }
 
 

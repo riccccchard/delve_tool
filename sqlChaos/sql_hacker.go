@@ -55,10 +55,6 @@ func (h *sqlHacker) Invade(ctx context.Context, timeout time.Duration) error {
 	if err = h.invade(sctx, timeout) ; err != nil{
 		return err
 	}
-
-	if err = h.clearAllBreakpoints() ; err != nil{
-		return err
-	}
 	cancel()
 	return nil
 }
@@ -68,7 +64,11 @@ func (h *sqlHacker) createBreakpoints(ctx context.Context) error {
 	for funcname := range offsetOfFuncs {
 		pcs, err := h.FunctionReturnLocations(funcname)
 		if err != nil || len(pcs) == 0 {
-			log.Infof("[sqlHacker.createBreakpoints] Can't find funcname : %s", funcname)
+			msg := ""
+			if err != nil{
+				msg += err.Error()
+			}
+			log.Infof("[sqlHacker.createBreakpoints] Can't find funcname : %s , error - %s", funcname, msg)
 			continue
 		}
 		haveFunction = true
@@ -151,18 +151,5 @@ func NewSqlHacker(c *rpc2.RPCClient) Hacker {
 		breakpoints: make(map[int]string),
 	}
 	return hacker
-}
-
-func (h *sqlHacker) clearAllBreakpoints () error {
-	log.Infof("[sqlHacker.clearAllBreakPoints] clearing all break points....")
-
-	for ID := range h.breakpoints{
-		_ , err := h.ClearBreakpoint(ID)
-		if err != nil{
-			log.Errorf("[sqlHacker.ClearAllBreakPoints]Failed to clear breakpoint , error - %s", err.Error())
-			return err
-		}
-	}
-	return nil
 }
 

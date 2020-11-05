@@ -26,7 +26,7 @@ func (dc *DelveClient) setGolangSqlError ( workTime time.Duration) error{
 	}
 
 	defer func (){
-		if err := dc.client.Disconnect(true) ; err != nil{
+		if err := dc.client.Disconnect(false) ; err != nil{
 			log.Errorf("[DelveClient.setGolangSqlError]Failed to disconnect client , error - %s")
 		}
 	}()

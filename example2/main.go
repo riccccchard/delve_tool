@@ -34,16 +34,16 @@ func main(){
 	count := 2
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		user := &User{}
-		ok, _ := engine.Where("username=?" , "test" ).Get(user)
+		_ , err := engine.Where("username=?" , "test" ).Get(user)
 
-		if ! ok {
+		if err != nil{
 			fmt.Fprintf(w , "Can't find any user username = test , error - %s\n", err.Error())
 			return
 		}
 
 		fmt.Fprintf(w , "get user : %+v\n", user)
 		user.Status = count
-		_ , err := engine.Update(user)
+		_ , err = engine.Update(user)
 		if err != nil{
 			fmt.Fprintf(w , "Failed to update user status. , error - %s\n" , err.Error())
 			return
