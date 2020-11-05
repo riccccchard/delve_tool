@@ -28,7 +28,7 @@ func (ds *DelveServer) GetAddress() string {
 func (ds *DelveServer) SetAddress(address string) {
 	if address == "" {
 		//默认监听地址为
-		address = "127.0.0.1:12345"
+		address = "127.0.0.1:30303"
 	}
 	ds.address = address
 }
