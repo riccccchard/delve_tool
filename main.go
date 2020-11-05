@@ -23,13 +23,14 @@ var (
 	myDelveClient *delveClient.DelveClient
 	pid           int
 	//是否打印delve server 和rpc的调试信息
-	debug         bool
+	debug bool
 )
 
 const (
 	errorTypeUsage = `experiment's error type
 0 : sql query error
 `
+	version = "0.4.1"
 )
 
 func init() {
@@ -37,7 +38,7 @@ func init() {
 	flag.DurationVar(&duration, "duration", 30*time.Second, "Duration of the experiment")
 	flag.IntVar(&errorType, "type", 0, errorTypeUsage)
 	flag.IntVar(&pid, "pid", 0, "target process pid")
-	flag.BoolVar(&debug, "debug" , false , "debug is used to pring delve server and rpc-json flags")
+	flag.BoolVar(&debug, "debug", false, "debug is used to pring delve server and rpc-json flags")
 }
 
 //获取目标容器Pid
@@ -80,7 +81,7 @@ func SetErrorToTargetProcess(errorType int, duration time.Duration, address stri
 }
 
 func getErrorTypeString(errorType delveClient.ErrorType) string {
-	switch errorType{
+	switch errorType {
 	case delveClient.SqlError:
 		return "sql-error"
 	}
@@ -88,20 +89,26 @@ func getErrorTypeString(errorType delveClient.ErrorType) string {
 }
 
 //打开delve server调试信息
-func setupSelveServerDebugLog(){
-	logflags.Setup(true , "debugger", "")
+func setupSelveServerDebugLog() {
+	logflags.Setup(true, "debugger", "")
 }
 
 func main() {
 	flag.Parse()
+	for i := range os.Args {
+		if os.Args[i] == "version" || os.Args[i] == "v" || os.Args[i] == "-v" {
+			fmt.Printf("version : %s", version)
+			break
+		}
+	}
 	log.InitLog(log.DebugLvl)
 	log.Infof("[Main]Get args from command , pid : %d , address : %s , duration , %s , error type : %s", pid, address, duration, getErrorTypeString(delveClient.ErrorType(errorType)))
 
-	if debug{
+	if debug {
 		setupSelveServerDebugLog()
 	}
 
-	if pid <= 0{
+	if pid <= 0 {
 		fmt.Printf("pid must be Positive number!")
 		log.Errorf("pid must be Positive number!")
 		flag.Usage()
@@ -114,8 +121,8 @@ func main() {
 
 	wg := new(sync.WaitGroup)
 	wg.Add(2)
-	go func(){
-		if err := AttachTargetProcess(uint32(pid), address) ; err != nil{
+	go func() {
+		if err := AttachTargetProcess(uint32(pid), address); err != nil {
 			log.Errorf("[Main]Failed to attach target process , error - %s\nexiting delve tool process...", err.Error())
 			os.Exit(1)
 		}
@@ -123,7 +130,7 @@ func main() {
 	}()
 
 	go func() {
-		if err := SetErrorToTargetProcess(errorType, duration, address) ; err != nil{
+		if err := SetErrorToTargetProcess(errorType, duration, address); err != nil {
 			log.Errorf("[Main]Failed to set error to target process , error - %s\nexiting delve tool process...", err.Error())
 			os.Exit(1)
 		}
