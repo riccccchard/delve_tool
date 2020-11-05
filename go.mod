@@ -20,6 +20,7 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-delve/delve v1.5.1-0.20200915214930-85952c08267b
 	github.com/go-ole/go-ole v1.2.4 // indirect
+	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gogo/googleapis v1.4.0 // indirect
 	github.com/imdario/mergo v0.3.9 // indirect
 	github.com/json-iterator/go v1.1.10 // indirect
@@ -41,4 +42,5 @@ require (
 	sigs.k8s.io/controller-runtime v0.6.3
 	sigs.k8s.io/structured-merge-diff v0.0.0-20190817042607-6149e4549fca // indirect
 	sigs.k8s.io/testing_frameworks v0.1.2 // indirect
+	xorm.io/xorm v1.0.5 // indirect
 )

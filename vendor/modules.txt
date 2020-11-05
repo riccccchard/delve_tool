@@ -202,6 +202,9 @@ github.com/go-logr/logr
 ## explicit
 github.com/go-ole/go-ole
 github.com/go-ole/go-ole/oleutil
+# github.com/go-sql-driver/mysql v1.4.1
+## explicit
+github.com/go-sql-driver/mysql
 # github.com/go-xorm/core v0.6.0
 github.com/go-xorm/core
 # github.com/gogo/googleapis v1.4.0
@@ -383,6 +386,7 @@ gomodules.xyz/jsonpatch/v2
 # gonum.org/v1/netlib v0.0.0-20190331212654-76723241ea4e
 ## explicit
 # google.golang.org/appengine v1.6.2
+google.golang.org/appengine/cloudsql
 google.golang.org/appengine/internal
 google.golang.org/appengine/internal/base
 google.golang.org/appengine/internal/datastore

@@ -10,36 +10,36 @@ import (
 	"os"
 	"time"
 
-	"git.garena.com/shopee/loan-service/airpay_backend/public/common/log"
 	"golang.org/x/sync/errgroup"
+
+	"git.garena.com/shopee/loan-service/airpay_backend/public/common/log"
+	"github.com/go-delve/delve/pkg/logflags"
 )
 
 var (
-	podName          string
-	containerName    string
-	namespace        string
-	containerRuntime string
-	duration         time.Duration
-	errorType        int
-	myDelveServer    *delveServer.DelveServer
-	address          string
-	myDelveClient    *delveClient.DelveClient
+	duration      time.Duration
+	errorType     int
+	myDelveServer *delveServer.DelveServer
+	address       string
+	myDelveClient *delveClient.DelveClient
+	pid           int
+	//是否打印delve server 和rpc的调试信息
+	debug bool
 )
 
 const (
 	errorTypeUsage = `experiment's error type
 0 : sql query error
 `
+	version = "0.4.1"
 )
 
 func init() {
-	flag.StringVar(&podName, "pod", "", "the name of target pod")
-	flag.StringVar(&containerName, "container", "", "the name of target container")
-	flag.StringVar(&namespace, "namespace", "default", "the namespace of target pod")
 	flag.StringVar(&address, "address", "127.0.0.1:30303", "address that delve server listen on")
 	flag.DurationVar(&duration, "duration", 30*time.Second, "Duration of the experiment")
-	flag.StringVar(&containerRuntime, "containerRuntime", "docker", "container runtime interface type ,now support docker and containerd")
 	flag.IntVar(&errorType, "type", 0, errorTypeUsage)
+	flag.IntVar(&pid, "pid", 0, "target process pid")
+	flag.BoolVar(&debug, "debug", false, "debug is used to pring delve server and rpc-json flags")
 }
 
 //获取目标容器Pid
@@ -56,7 +56,7 @@ func GetTargetPid(podName string, namespace string, containerName string, contai
 
 }
 
-//启动delve server attach目标进程，wairForStopServer是阻塞的，需要起协程
+//启动delve server attach目标进程，waitForStopServer是阻塞的，需要起协程
 func AttachTargetProcess(pid uint32, address string) error {
 	myDelveServer = &delveServer.DelveServer{}
 
@@ -80,32 +80,49 @@ func SetErrorToTargetProcess(errorType int, duration time.Duration, address stri
 	myDelveClient = &delveClient.DelveClient{}
 	return myDelveClient.InitAndWork(delveClient.ErrorType(errorType), duration, address)
 }
-func getErrorTypeString(errorType int) string {
-	if errorType == 0 {
-		return "sql query error"
+
+func getErrorTypeString(errorType delveClient.ErrorType) string {
+	switch errorType {
+	case delveClient.SqlError:
+		return "sql-error"
 	}
-	return ""
+	return "unknow error type"
 }
+
+//打开delve server调试信息
+func setupSelveServerDebugLog() {
+	logflags.Setup(true, "debugger", "")
+}
+
 func main() {
 	flag.Parse()
+	for i := range os.Args {
+		if os.Args[i] == "version" || os.Args[i] == "v" || os.Args[i] == "-v" {
+			fmt.Printf("version : %s", version)
+			break
+		}
+	}
 	log.InitLog(log.DebugLvl)
-	if podName == "" {
+	log.Infof("[Main]Get args from command , pid : %d , address : %s , duration , %s , error type : %s", pid, address, duration, getErrorTypeString(delveClient.ErrorType(errorType)))
+
+	if debug {
+		setupSelveServerDebugLog()
+	}
+
+	if pid <= 0 {
+		fmt.Printf("pid must be Positive number!")
+		log.Errorf("pid must be Positive number!")
 		flag.Usage()
 		return
 	}
-	fmt.Println(duration)
-	log.Infof("[Main]Get args : namespace - %s , pod - %s , container - %s , duration - %v, errorType - %s , address - %s , containerRuntime - %s", namespace, podName, containerName, duration, getErrorTypeString(errorType), address, containerRuntime)
-
-	g := &errgroup.Group{}
-
-	pid, err := GetTargetPid(podName, namespace, containerName, containerRuntime)
-	if err != nil {
-		fmt.Printf("error : %s", err.Error())
-		return
+	if duration <= 0 {
+		log.Infof("duration is a negative integer , force it to 10 seconds.")
+		duration = 10 * time.Second
 	}
 
+	g := &errgroup.Group{}
 	g.Go(func() error {
-		return AttachTargetProcess(pid, address)
+		return AttachTargetProcess(uint32(pid), address)
 	})
 
 	g.Go(func() error {
@@ -121,10 +138,10 @@ func main() {
 			os.Exit(0)
 		}
 	}()
-	if err = g.Wait(); err != nil {
-		fmt.Printf("error : %s\n", err.Error())
+	if err := g.Wait(); err != nil {
+		log.Errorf("[Main]Failed to attach or wait server to stop...")
 		return
 	}
-	log.Infof("[Main]Process done successful...")
-	fmt.Printf("Process done successful...")
+	log.Infof("[Main]Process done successful , quiting...")
+	fmt.Printf("[Main]Process done successful , quiting...")
 }
