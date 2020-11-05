@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    labels:
+        app: httpxorm
+    name: httpxorm
+spec:
+    selector:
+        matchLabels:
+            app: httpxorm
+    replicas: 1
+    template: #定义pod
+        metadata:
+            labels:
+                app: httpxorm
+        spec:
+            containers:
+                - image: httpxorm
+                  name: httpxorm
+                  imagePullPolicy: Never
+                  ports:
+                      - containerPort: 9101
+

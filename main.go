@@ -7,11 +7,12 @@ import (
 	"delve_tool/delveServer"
 	"flag"
 	"fmt"
+	"golang.org/x/sync/errgroup"
 	"os"
-	"sync"
 	"time"
 
 	"git.garena.com/shopee/loan-service/airpay_backend/public/common/log"
+	"github.com/go-delve/delve/pkg/logflags"
 )
 
 var (
@@ -21,12 +22,15 @@ var (
 	address       string
 	myDelveClient *delveClient.DelveClient
 	pid           int
+	//是否打印delve server 和rpc的调试信息
+	debug bool
 )
 
 const (
 	errorTypeUsage = `experiment's error type
 0 : sql query error
 `
+	version = "0.4.1"
 )
 
 func init() {
@@ -34,6 +38,7 @@ func init() {
 	flag.DurationVar(&duration, "duration", 30*time.Second, "Duration of the experiment")
 	flag.IntVar(&errorType, "type", 0, errorTypeUsage)
 	flag.IntVar(&pid, "pid", 0, "target process pid")
+	flag.BoolVar(&debug, "debug", false, "debug is used to pring delve server and rpc-json flags")
 }
 
 //获取目标容器Pid
@@ -76,19 +81,34 @@ func SetErrorToTargetProcess(errorType int, duration time.Duration, address stri
 }
 
 func getErrorTypeString(errorType delveClient.ErrorType) string {
-	switch errorType{
+	switch errorType {
 	case delveClient.SqlError:
 		return "sql-error"
 	}
 	return "unknow error type"
 }
 
+//打开delve server调试信息
+func setupSelveServerDebugLog() {
+	logflags.Setup(true, "debugger", "")
+}
+
 func main() {
 	flag.Parse()
+	for i := range os.Args {
+		if os.Args[i] == "version" || os.Args[i] == "v" || os.Args[i] == "-v" {
+			fmt.Printf("version : %s", version)
+			break
+		}
+	}
 	log.InitLog(log.DebugLvl)
 	log.Infof("[Main]Get args from command , pid : %d , address : %s , duration , %s , error type : %s", pid, address, duration, getErrorTypeString(delveClient.ErrorType(errorType)))
 
-	if pid <= 0{
+	if debug {
+		setupSelveServerDebugLog()
+	}
+
+	if pid <= 0 {
 		fmt.Printf("pid must be Positive number!")
 		log.Errorf("pid must be Positive number!")
 		flag.Usage()
@@ -99,23 +119,14 @@ func main() {
 		duration = 10 * time.Second
 	}
 
-	wg := new(sync.WaitGroup)
-	wg.Add(2)
-	go func(){
-		if err := AttachTargetProcess(uint32(pid), address) ; err != nil{
-			log.Errorf("[Main]Failed to attach target process , error - %s\nexiting delve tool process...", err.Error())
-			os.Exit(1)
-		}
-		wg.Done()
-	}()
+	g := &errgroup.Group{}
+	g.Go( func () error {
+		return AttachTargetProcess(uint32(pid), address)
+	})
 
-	go func() {
-		if err := SetErrorToTargetProcess(errorType, duration, address) ; err != nil{
-			log.Errorf("[Main]Failed to set error to target process , error - %s\nexiting delve tool process...", err.Error())
-			os.Exit(1)
-		}
-		wg.Done()
-	}()
+	g.Go( func () error {
+		return SetErrorToTargetProcess(errorType , duration , address)
+	})
 	//起一个协程计时，如果超过duration三秒直接停掉进程，防止因为其他原因阻塞在server.stop
 	go func() {
 		ticker := time.NewTicker(duration + 3*time.Second)
@@ -126,7 +137,10 @@ func main() {
 			os.Exit(0)
 		}
 	}()
-	wg.Wait()
+	if err := g.Wait() ; err != nil{
+		log.Errorf("[Main]Failed to attach or wait server to stop...")
+		return
+	}
 	log.Infof("[Main]Process done successful , quiting...")
 	fmt.Printf("[Main]Process done successful , quiting...")
 }
