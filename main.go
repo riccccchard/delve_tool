@@ -7,9 +7,10 @@ import (
 	"delve_tool/delveServer"
 	"flag"
 	"fmt"
-	"golang.org/x/sync/errgroup"
 	"os"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 
 	"git.garena.com/shopee/loan-service/airpay_backend/public/common/log"
 	"github.com/go-delve/delve/pkg/logflags"
@@ -123,14 +124,14 @@ func main() {
 	}
 	fmt.Printf("[Main]Starting to attach process and set up client...\n")
 	g := &errgroup.Group{}
-	g.Go( func () error {
+	g.Go(func() error {
 		return AttachTargetProcess(uint32(pid), address)
 	})
 
-	g.Go( func () error {
-		return SetErrorToTargetProcess(errorType , duration , address)
+	g.Go(func() error {
+		return SetErrorToTargetProcess(errorType, duration, address)
 	})
-	if err := g.Wait() ; err != nil{
+	if err := g.Wait(); err != nil {
 		log.Errorf("[Main]Failed to attach or wait server to stop...")
 		return
 	}
