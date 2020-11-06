@@ -106,7 +106,6 @@ func (ds *DelveServer) WaitForStopServer() error {
 	}
 
 	//停止server
-	//FIXME： 如果没有下一次请求进来，就会一直卡在stop阶段，目前阶段会一直监听直到下一个请求进来
 	err := ds.server.Stop()
 	if err != nil {
 		log.Errorf("[DelveServer.WaitForStopServer]failed to stop server : %s", err.Error())
