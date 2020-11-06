@@ -31,7 +31,7 @@ const (
 	errorTypeUsage = `experiment's error type
 0 : sql query error
 `
-	version = "0.4.1"
+	version = "0.4.2"
 )
 
 func init() {
@@ -137,4 +137,5 @@ func main() {
 	}
 	log.Infof("[Main]Process done successful , quiting...")
 	fmt.Printf("[Main]Process done successful , quiting...\n")
+	log.Flush()
 }

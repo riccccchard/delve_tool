@@ -5,6 +5,7 @@ import (
 	"delve_tool/sqlChaos"
 	"git.garena.com/shopee/loan-service/airpay_backend/public/common/log"
 	"time"
+	"fmt"
 )
 
 /*
@@ -31,5 +32,9 @@ func (dc *DelveClient) setGolangSqlError ( workTime time.Duration) error{
 		}
 	}()
 	log.Infof("[DelveClient.SetSqlQueryError]client disconnecting")
+	if _ , err = dc.client.Halt() ; err != nil{
+		return err
+	}
+	fmt.Printf("Client Halting....\n")
 	return nil
 }
