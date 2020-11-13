@@ -5,6 +5,7 @@ import (
 	"delve_tool/containerClient"
 	"delve_tool/delveClient"
 	"delve_tool/delveServer"
+	"delve_tool/types"
 	"flag"
 	"fmt"
 	"os"
@@ -25,21 +26,26 @@ var (
 	pid           int
 	//是否打印delve server 和rpc的调试信息
 	debug bool
+	//自定义注入的error 信息
+	errorInfo     string
+	//有关http的status code信息
+	httpStatusCode int
 )
 
+
 const (
-	errorTypeUsage = `experiment's error type
-0 : sql query error
-`
-	version = "0.4.2"
+	version = "1.0.0"
 )
 
 func init() {
-	flag.StringVar(&address, "address", "127.0.0.1:30303", "address that delve server listen on")
+	//随机端口
+	flag.StringVar(&address, "address", "127.0.0.1:0", "address that delve server listen on")
 	flag.DurationVar(&duration, "duration", 30*time.Second, "Duration of the experiment")
-	flag.IntVar(&errorType, "type", 0, errorTypeUsage)
+	flag.IntVar(&errorType, "type", 0, types.GetErrorUsage())
 	flag.IntVar(&pid, "pid", 0, "target process pid")
-	flag.BoolVar(&debug, "debug", false, "debug is used to pring delve server and rpc-json flags")
+	flag.BoolVar(&debug, "debug", false, "debug is used to print delve server and rpc-json flags")
+	flag.StringVar(&errorInfo , "errorInfo" , "" , "errorInfo defines the error information that will be used to inject.")
+	flag.IntVar(&httpStatusCode, "httpStatusCode" , 500 , "http status code defines the status code that will be used to inject to response.")
 }
 
 //获取目标容器Pid
@@ -78,49 +84,82 @@ func AttachTargetProcess(pid uint32, address string) error {
 }
 
 //注入故障
-func SetErrorToTargetProcess(errorType int, duration time.Duration, address string) error {
+func SetErrorToTargetProcess(errorType types.ErrorType, duration time.Duration, address string , params ...interface{}) error {
 	myDelveClient = &delveClient.DelveClient{}
 	fmt.Printf("[SetErrorToTargetProcess] Client init and working... \n")
-	return myDelveClient.InitAndWork(delveClient.ErrorType(errorType), duration, address)
+	return myDelveClient.InitAndWork(errorType, duration, address , params)
 }
 
-func getErrorTypeString(errorType delveClient.ErrorType) string {
+func getErrorTypeString(errorType types.ErrorType) string {
 	switch errorType {
-	case delveClient.SqlError:
+	case types.SqlError:
 		return "sql-error"
+	case types.HttpRequestError:
+		return "http-request-error"
+	case types.HttpStatusChaos:
+		return "http-status-chaos"
 	}
 	return "unknow error type"
 }
 
 //打开delve server调试信息
-func setupSelveServerDebugLog() {
+func setupDelveServerDebugLog() {
 	logflags.Setup(true, "debugger", "")
+}
+
+func checkoutArguementCorrect() bool {
+	if pid <= 0 {
+		fmt.Printf("[checkoutArguementCorrect]pid must be Positive number!\n")
+		log.Errorf("[checkoutArguementCorrect]pid must be Positive number!")
+		flag.Usage()
+		return false
+	}
+	_errorType := types.ErrorType(errorType)
+	if _ , ok := types.ChaosTypeMap[_errorType]; !ok{
+		fmt.Printf("[checkoutArguementCorrect]Unknown error type!\n")
+		log.Errorf("[checkoutArguementCorrect]Unknown error type!")
+		flag.Usage()
+		return false
+	}
+	if duration <= 0 {
+		fmt.Printf("[checkoutArguementCorrect]duration is a negative integer , force it to 10 seconds.\n")
+		log.Infof("[checkoutArguementCorrect]duration is a negative integer , force it to 10 seconds.")
+		duration = 10 * time.Second
+	}
+
+	if _errorType == types.HttpStatusChaos && (httpStatusCode < 100  && httpStatusCode > 999){
+		fmt.Printf("[checkoutArguementCorrect]error http status code setting! force it to 500\n")
+		httpStatusCode = 500
+	}
+	return true
 }
 
 func main() {
 	flag.Parse()
+	help := false
 	for i := range os.Args {
 		if os.Args[i] == "version" || os.Args[i] == "v" || os.Args[i] == "-v" {
 			fmt.Printf("version : %s\n", version)
-			return
+			help=true
+		}
+		if os.Args[i] == "help" {
+			flag.Usage()
+			help=true
 		}
 	}
-	log.InitLog(log.DebugLvl)
-	log.Infof("[Main]Get args from command , pid : %d , address : %s , duration , %s , error type : %s", pid, address, duration, getErrorTypeString(delveClient.ErrorType(errorType)))
-
-	if debug {
-		setupSelveServerDebugLog()
-	}
-
-	if pid <= 0 {
-		fmt.Printf("[Main]pid must be Positive number!\n")
-		log.Errorf("[Main]pid must be Positive number!")
-		flag.Usage()
+	if help{
 		return
 	}
-	if duration <= 0 {
-		log.Infof("[Main]duration is a negative integer , force it to 10 seconds.")
-		duration = 10 * time.Second
+	log.InitLog(log.DebugLvl)
+	defer log.Flush()
+	_errorType := types.ErrorType(errorType)
+	log.Infof("[Main]Get args from command , pid : %d , address : %s , duration , %s , error type : %s", pid, address, duration, getErrorTypeString(_errorType))
+
+	if debug {
+		setupDelveServerDebugLog()
+	}
+	if !checkoutArguementCorrect(){
+		return
 	}
 	fmt.Printf("[Main]Starting to attach process and set up client...\n")
 	g := &errgroup.Group{}
@@ -129,7 +168,16 @@ func main() {
 	})
 
 	g.Go(func() error {
-		return SetErrorToTargetProcess(errorType, duration, address)
+		switch _errorType {
+		case types.SqlError:
+			return SetErrorToTargetProcess(_errorType, duration, address , errorInfo)
+		case types.HttpRequestError:
+			return SetErrorToTargetProcess(_errorType, duration, address)
+		case types.HttpStatusChaos:
+			return SetErrorToTargetProcess(_errorType, duration , address , httpStatusCode)
+		default:
+			return nil
+		}
 	})
 	if err := g.Wait(); err != nil {
 		log.Errorf("[Main]Failed to attach or wait server to stop...")
@@ -137,5 +185,4 @@ func main() {
 	}
 	log.Infof("[Main]Process done successful , quiting...")
 	fmt.Printf("[Main]Process done successful , quiting...\n")
-	log.Flush()
 }

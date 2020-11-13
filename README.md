@@ -7,35 +7,15 @@
 例子如下
 
 ```yaml
-apiVersion: apps/v1
-kind: DaemonSet
-metadata:
-  name: delveserver
-  namespace: default
-  labels:
-    app: delveserver
-spec:
-  selector:
-    matchLabels:
-      name: delveserver
-  template:
-    metadata:
-      labels:
-        name: delveserver
-    spec:
+      .......
+      #添加进程和网络的namespace特权
       hostNetwork: true
       hostIPC: true
       hostPID: true
-      containers:
-      - name: delveserver
-        image: delveserver
-        imagePullPolicy: Never
-        ports:
-        - containerPort: 3333
-        securityContext:
-          privileged: true
+      ........
           capabilities:
             add:
+                #添加pod的特权
               - SYS_PTRACE
               - SYS_ADMIN
         volumeMounts:
@@ -49,25 +29,7 @@ spec:
             memory: "500Mi"
           requests:
             memory: "100Mi"
-      - name: delveclient
-        image: delveclient
-        imagePullPolicy: Never
-        ports:
-        - containerPort: 8888
-        resources:
-          limits:
-            memory: "500Mi"
-          requests:
-            memory: "100Mi"
-      terminationGracePeriodSeconds: 30
-
-      volumes:
-        - name: socket-path
-          hostPath:
-            path: /var/run/docker.sock
-        - name: sys-path
-          hostPath:
-            path: /sys
+      ,.........
 
 ```
 
@@ -82,24 +44,22 @@ CGO_ENABLED=0 GOOS=linux go build -mod=vendor -o delve_tool
 使用时，使用如下命令运行二进制文件
 
 ```go
-./delve_tool --pod="your pod name" --container="your container name" --namespace="your namespace" --address="127.0.0.1:30303" --duration=30s --containerRuntime="docker" --type=0
+./delve_tool --pid=your_pid --address="127.0.0.1:30303" --duration=30s --type=0
 ```
 
 参数意义如下
 
-pod：你想要attach的pod名字
-
-container：你想要attach的container名字，都是可以通过kubectl describe拿到的，默认为pod中的第一个container.
-
-namespace：你想要attach的pod所在的namespace，默认为"default"
+pid: 你想要attach的进程pid
 
 address：将要启动的delve server所监听的地址，默认为127.0.0.1:30303
 
 duration：整个attach需要持续的时间，默认为30s
 
-containerRuntime：k8s底层的container runtime interface的实现方法，目前支持"docker"和"containerd"两种，默认为docker
-
-type：你想要注入的故障类型，0表示数据库查询异常
+type：你想要注入的故障类型:\
+      0：表示数据库查询异常，可以通过设置errorInfo来设置返回的错误信息，方便查询\
+      1：表示http request异常，目前默认返回400 Bad Request\
+      2：表示http response 异常，可以通过设置httpStatusCode来设置http response的返回码
+      
 
 ##  使用建议
 
@@ -213,7 +173,7 @@ func getMysqlService2() string {
 3. 使用这个delve_tool去attach目标container
 
    ```go
-   ./delve_tool --pod="httpapp-68d9c99659-qclmt" --container="httpapp" --namespace="default" --address="127.0.0.1:3030" --duration=10s --containerRuntime="docker" --type=0
+   ./delve_tool --pid=your_pid --address="127.0.0.1:3030" --duration=10s  --type=0
    ```
 
    （请根据readme.md中的参数介绍填写自己的参数）

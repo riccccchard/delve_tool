@@ -1,6 +1,7 @@
 package delveClient
 
 import (
+	"delve_tool/types"
 	"errors"
 	"fmt"
 	"git.garena.com/shopee/loan-service/airpay_backend/public/common/log"
@@ -74,19 +75,46 @@ func (dc *DelveClient) clearAllBreakPoints() error{
 }
 
 //根据参数初始化client
-func (dc *DelveClient) InitAndWork(errorType ErrorType , workTime time.Duration , address string) error{
+func (dc *DelveClient) InitAndWork(errorType types.ErrorType, workTime time.Duration , address string , params ...interface{}) error{
+	defer func (){
+		log.Infof("[DelveClient.setHttpRequestError]client disconnecting")
+		if _ , err := dc.client.Halt() ; err != nil{
+			log.Errorf("[DelveClient.InitAndWork]Failed to halt , error - %s", err.Error())
+		}
+		fmt.Printf("Client Halting....\n")
+		if err := dc.client.Disconnect(false) ; err != nil{
+			log.Errorf("[DelveClient.InitAndWork]Failed to disconnect client , error - %s", err.Error())
+		}
+	}()
 	err := dc.initClient(address)
 	if err != nil{
 		return err
 	}
 	switch errorType{
-	case SqlError:
+	case types.SqlError:
 		//为go-sql-driver注入异常
-		fmt.Printf("[DelveClient.InitAndWork] Ready to set golang sql error....\n")
-		return dc.setGolangSqlError(workTime)
+		str , ok := params[0].(string)
+		if !ok{
+			log.Errorf("please use a string type error info!")
+			return errors.New("error info is not string")
+		}
+		fmt.Printf("[DelveClient.InitAndWork] Ready to set golang sql error , error info : %s\n" , str)
+		return dc.setGolangSqlError(workTime, str)
+	case types.HttpRequestError:
+		fmt.Printf("[DelveClient.InitAndWork] Ready to set http request error....\n")
+		return dc.setHttpRequestError(workTime)
+	case types.HttpStatusChaos:
+		code , ok := params[0].(int)
+		if !ok {
+			log.Errorf("please use a int type status code!")
+			return errors.New("status code is not int")
+		}
+		fmt.Printf("[DelveClient.InitAndWork] Ready to set http status chaos....\n")
+		return dc.setHttpResponseHacker(workTime, code)
 	default:
-		log.Errorf("[DelveClient.Work]Unknow errorType!")
-		return errors.New("[DelveClient.Work]Unknow errorType")
+		//如果是未知类型，就会调用此方法让server提前退出，防止server一直监听导致协程不退出
+		log.Errorf("[DelveClient.InitAndWork]Unknown errorType!")
+		return errors.New("[DelveClient.InitAndWork]Unknown errorType")
 	}
 }
 

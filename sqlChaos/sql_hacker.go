@@ -1,21 +1,25 @@
 package sqlChaos
 
 import (
+	"context"
+	"errors"
+	"fmt"
+	"git.garena.com/shopee/loan-service/airpay_backend/public/common/log"
 	"github.com/go-delve/delve/service/api"
 	"github.com/go-delve/delve/service/rpc2"
-	"git.garena.com/shopee/loan-service/airpay_backend/public/common/log"
-	"context"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
-	"fmt"
-	"errors"
 )
 
 /*
 	需要注入异常的sql函数的error变量的偏移量
 */
-var injectedErr = "\"database/sql/driver\".ErrBadConn"
+var (
+	injectedErr = "\"database/sql/driver\".ErrSkip"
+	once = new(sync.Once)
+)
 
 var offsetOfFuncs = map[string]int{
 	"database/sql.(*DB).QueryContext":   0x48,
@@ -30,14 +34,12 @@ func Register(funcname string, offset int) {
 	offsetOfFuncs[funcname] = offset
 }
 
-type Hacker interface {
-	Invade(ctx context.Context, period time.Duration) error
-}
-
 type sqlHacker struct {
 	*rpc2.RPCClient
 
 	breakpoints map[int]string
+
+	errorInfo string
 }
 
 func (h *sqlHacker) Invade(ctx context.Context, timeout time.Duration) error {
@@ -91,6 +93,17 @@ func (h *sqlHacker) createBreakpoints(ctx context.Context) error {
 	return nil
 }
 
+//修改error的string field，只需一次
+func (h *sqlHacker) modifyErrorStringField (strptr int , goroutineId int) {
+	once.Do(func (){
+		expr := fmt.Sprintf("*(*string)(*(*int)(%d)) = \"%s\"", strptr , h.errorInfo)
+		_ , err := h.Call(goroutineId, expr, false)
+		if err != nil{
+			log.Errorf("[sqlHacker.invade]Call expr  %v error %v", expr, err)
+		}
+	})
+}
+
 func (h *sqlHacker) invade(ctx context.Context, period time.Duration) error {
 	log.Infof("[sqlHacker.invade]Start invading for %v", period)
 	for {
@@ -103,7 +116,7 @@ func (h *sqlHacker) invade(ctx context.Context, period time.Duration) error {
 				return nil
 			}
 			log.Infof("[sqlHacker.invade]Continuing...")
-			if state.CurrentThread == nil || state.CurrentThread.Breakpoint == nil {
+			if state.CurrentThread == nil{
 				continue
 			}
 			id := state.CurrentThread.Breakpoint.ID
@@ -132,10 +145,13 @@ func (h *sqlHacker) invade(ctx context.Context, period time.Duration) error {
 					}
 					offset := offsetOfFuncs[h.breakpoints[id]]
 					expr := fmt.Sprintf("*(*error)(%d) = %s", int(value)+offset, injectedErr)
-					_, err = h.Call(-1, expr, false)
+					_, err = h.Call(state.CurrentThread.GoroutineID, expr, false)
 					if err != nil {
 						log.Errorf("[sqlHacker.invade]Call expr  %v error %v", expr, err)
 						return err
+					}
+					if h.errorInfo != ""{
+						h.modifyErrorStringField(int(value)+offset+8, state.CurrentThread.GoroutineID)
 					}
 				}
 			}
@@ -144,11 +160,12 @@ func (h *sqlHacker) invade(ctx context.Context, period time.Duration) error {
 }
 
 
-func NewSqlHacker(c *rpc2.RPCClient) Hacker {
+func NewSqlHacker(c *rpc2.RPCClient , errorInfo string) *sqlHacker {
 	log.Infof("[NewSqlHacker]New sql hacker....")
 	hacker := &sqlHacker{
 		RPCClient: c,
 		breakpoints: make(map[int]string),
+		errorInfo: errorInfo,
 	}
 	return hacker
 }

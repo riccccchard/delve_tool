@@ -5,7 +5,6 @@ import (
 	"delve_tool/sqlChaos"
 	"git.garena.com/shopee/loan-service/airpay_backend/public/common/log"
 	"time"
-	"fmt"
 )
 
 /*
@@ -14,10 +13,10 @@ import (
 
 //设置go-sql-driver库中对应function的错误返回值
 //funcname : 需要hack的function名称
-func (dc *DelveClient) setGolangSqlError ( workTime time.Duration) error{
+func (dc *DelveClient) setGolangSqlError ( workTime time.Duration , errorInfo string) error{
 	log.Infof("[DelveClient.SetMysqlQueryError]start set sql query error....")
 
-	hacker := sqlChaos.NewSqlHacker(dc.client)
+	hacker := sqlChaos.NewSqlHacker(dc.client, errorInfo)
 
 	ctx := context.TODO()
 
@@ -26,15 +25,5 @@ func (dc *DelveClient) setGolangSqlError ( workTime time.Duration) error{
 		return err
 	}
 
-	defer func (){
-		if err := dc.client.Disconnect(false) ; err != nil{
-			log.Errorf("[DelveClient.setGolangSqlError]Failed to disconnect client , error - %s")
-		}
-	}()
-	log.Infof("[DelveClient.SetSqlQueryError]client disconnecting")
-	if _ , err = dc.client.Halt() ; err != nil{
-		return err
-	}
-	fmt.Printf("Client Halting....\n")
 	return nil
 }

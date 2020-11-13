@@ -24,7 +24,7 @@ type User struct {
 }
 
 func main() {
-	mysqlService := getMysqlService()
+	mysqlService := getMysqlService2()
 	dataSource := fmt.Sprintf("root:q755100802@tcp(%s)/user_db", mysqlService)
 	db, err := sql.Open("mysql", dataSource)
 	if err != nil {
