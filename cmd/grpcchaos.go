@@ -96,7 +96,8 @@ func initAndRunGrpcChaos() error{
 		hacker , err = grpcServerChaos.NewgRPCChaos(client , grpcChaosType , grpcDelay)
 
 		//TODO: 加入修改gRPC调用返回值的chaos
-
+	case grpcServerChaos.Response_error_type:
+		hacker , err = grpcServerChaos.NewgRPCChaos(client , grpcChaosType)
 	default:
 		log.Errorf("unknown gRPC chaos type")
 		fmt.Printf("unknown gRPC chaos type\n")

@@ -76,6 +76,9 @@ var(
 
 	//functionNames表示要inject chaos的function名字对象，需要输入全名，如database/sql.(*DB).Query ; 多个function names之间用逗号隔开
 	functionNames       string
+
+	//代码行表示要inject chaos的代码行地址，需要输入全名，如database/sql/sql.go:1547 ; 多个function names之间用逗号隔开
+	lines               string
 )
 func init() {
 	rootCmd.AddCommand(functionchaosCmd)
@@ -85,6 +88,8 @@ func init() {
 	functionchaosCmd.Flags().DurationVar(&functionDelay , "delay", 500 * time.Millisecond , "delay time of delay type")
 
 	functionchaosCmd.Flags().StringVar(&functionNames , "functionNames" , "" , "function target to inject chaos")
+
+	functionchaosCmd.Flags().StringVar(&lines , "lines" , "" , "lines target to inject chaos")
 
 }
 
@@ -101,7 +106,7 @@ func initAndRunFunctionChaos() error {
 		return err
 	}
 	var hacker types.ChaosInterface
-	hacker , err = functionChaos.NewFunctionChaos(client , functionChaosType , getFunctionNames(functionNames))
+	hacker , err = functionChaos.NewFunctionChaos(client , functionChaosType , getFunctionNames(functionNames) , getFunctionNames(lines))
 	if err != nil{
 		log.Errorf("Failed to new function chaos , error - %s", err.Error())
 		fmt.Printf("Failed to new function chaos , error - %s\n", err.Error())

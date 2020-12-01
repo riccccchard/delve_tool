@@ -57,20 +57,20 @@ func (h *functionPanicer) Invade(ctx context.Context, timeout time.Duration) err
 func (h *functionPanicer) createBreakpoints(ctx context.Context) error{
 	haveFunction := false
 	for _ , funcname := range h.funcnames {
-		pcs, err := h.FunctionReturnLocations(funcname)
-		if err != nil || len(pcs) == 0 {
+		locs, err := h.FindLocation(api.EvalScope{GoroutineID: -1} , funcname , false)
+		if err != nil || len(locs) == 0 {
 			msg := ""
 			if err != nil{
 				msg += err.Error()
 			}
-			log.Infof("Can't find function name : %s , error - %s", funcname, msg)
+			log.Infof("Can't find function name or line: %s , error - %s", funcname, msg)
 			continue
 		}
 		haveFunction = true
-		log.Infof("Creating breakpoint to funcname : %s", funcname)
-		for _, pc := range pcs {
+		log.Infof("Creating breakpoint to funcname or line: %s", funcname)
+		for _, loc := range locs {
 			b, err := h.CreateBreakpoint(&api.Breakpoint{
-				Addr: pc,
+				Addr: loc.PC,
 			})
 			if err != nil {
 				log.Errorf(" CreateBreakpoint error %v", err)
@@ -80,8 +80,8 @@ func (h *functionPanicer) createBreakpoints(ctx context.Context) error{
 		}
 	}
 	if ! haveFunction{
-		log.Errorf("can't find any  function")
-		return errors.New("can't find any  function")
+		log.Errorf("can't find any  function or line")
+		return errors.New("can't find any  function or line")
 	}
 	return nil
 }

@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	Delay_type         = "delay"
-	Request_error_type = "request_error"
+	Delay_type          = "delay"
+	Response_error_type = "response_error"
 )
 
 func NewgRPCChaos(r *rpc2.RPCClient , chaosType string , param ...interface{})( types.ChaosInterface , error){
@@ -25,6 +25,8 @@ func NewgRPCChaos(r *rpc2.RPCClient , chaosType string , param ...interface{})( 
 			delay = 1 * time.Second
 		}
 		return newGrpcServerDelayer(r , delay) , nil
+	case Response_error_type:
+		return nil , errors.New("request error is comming soon")
 	default:
 		return nil , errors.New("unknown grpc chaos type")
 	}

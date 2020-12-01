@@ -88,7 +88,7 @@ func init() {
 	sqlchaosCmd.Flags().StringVar(&sqlchaosType , "type", "delay" ," the type of sql chaos, including three types , \"delay\" , \"conn_pool\" , \"query_error\"")
 	sqlchaosCmd.Flags().StringVar(&sqlchaosErrorInfo , "errorInfo", "" , "the error information you want to modify when call a database query")
 	sqlchaosCmd.Flags().IntVar(&sqlchaosConnNumber , "number" , 100, "the number of connection you want to inject to database")
-	sqlchaosCmd.Flags().StringVar(&mysqlInfo , "mysqlinfo" , "127.0.0.1:3306" , "the information of mysql which you want to connect , like user:password@tcp(127.0.0.1:3306)/user")
+	sqlchaosCmd.Flags().StringVar(&mysqlInfo , "mysqlinfo" , "user:password@tcp(127.0.0.1:3306)/user" , "the information of mysql which you want to connect , like user:password@tcp(127.0.0.1:3306)/user")
 	sqlchaosCmd.Flags().DurationVar(&sqlchaosDelay , "delay" , 500 * time.Millisecond , "delay time to sql chaos")
 }
 
