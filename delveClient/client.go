@@ -61,6 +61,5 @@ func InitClient(address string) ( *rpc2.RPCClient , error) {
 	if ok := <- ch ; !ok{
 		return nil , errors.New("Failed to new client from conn , is server already quit? ")
 	}
-	close(ch)
 	return client,nil
 }
